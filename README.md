@@ -8,7 +8,7 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 
 ```yaml
 - name: Notify deploy started
-  uses: andradeweslley/gna@v1.0.0
+  uses: andradeweslley/gna@v1
   with:
     api_key: ${{ secrets.API_KEY }}
     title: "Deploy started"
@@ -20,7 +20,7 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 ```yaml
 - name: Notify deploy result
   if: always()
-  uses: andradeweslley/gna@v1.0.0
+  uses: andradeweslley/gna@v1
   with:
     api_key: ${{ secrets.API_KEY }}
     title: "Deploy finished"
@@ -36,6 +36,21 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 | `title`   | Yes     | -       | Notification title. |
 | `message` | No      | `""`    | Notification body (sent as `body` in the API). |
 | `status`  | No      | `started` | One of: `started`, `success`, `failed`. |
+| `warn_only` | No    | `false` | Report an undelivered notification as a warning instead of failing the step. |
+
+## Delivery failures
+
+The step fails when the notification does not reach a device, so a broken setup
+cannot look green. The reason is reported as an annotation:
+
+| Reason | Meaning |
+|--------|---------|
+| no active push subscription | No device is subscribed — enable push in the dashboard. |
+| push service rejected the notification | The push service refused it (often mismatched VAPID keys). |
+| invalid API key | The `api_key` is wrong or was regenerated. |
+| rate limited | More than 60 notifications in a minute. |
+
+Set `warn_only: true` to keep the step green and only emit a warning.
 
 ## Secrets
 
