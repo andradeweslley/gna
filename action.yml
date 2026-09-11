@@ -15,6 +15,10 @@ inputs:
     description: "One of started, success, failed"
     required: false
     default: "started"
+  warn_only:
+    description: "When true, report a failed delivery as a warning instead of failing the step"
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -25,6 +29,7 @@ runs:
         TITLE: ${{ inputs.title }}
         MESSAGE: ${{ inputs.message }}
         STATUS: ${{ inputs.status }}
+        WARN_ONLY: ${{ inputs.warn_only }}
         BASE_URL: "https://hofvarpnir.weslleyandrade.dev.br"
       run: |
         set -e
@@ -39,8 +44,27 @@ runs:
           -H "Content-Type: application/json" \
           -d "$BODY") || true
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        if [[ ! "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-          echo "Notify failed with HTTP $HTTP_CODE"
-          echo "$RESPONSE" | head -n -1
-          exit 1
+        PAYLOAD=$(echo "$RESPONSE" | sed '$d')
+        if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+          exit 0
         fi
+
+        # A 2xx used to be returned even when nothing reached a device, so a broken
+        # setup looked green. Name the reason so the failure is actionable.
+        case "$HTTP_CODE" in
+          409) REASON="no active push subscription — enable push in the dashboard" ;;
+          502) REASON="push service rejected the notification" ;;
+          401) REASON="invalid API key" ;;
+          429) REASON="rate limited" ;;
+          *)   REASON="HTTP ${HTTP_CODE:-no response}" ;;
+        esac
+        MSG="Gná: notification not delivered ($REASON)"
+
+        if [[ "$WARN_ONLY" == "true" ]]; then
+          echo "::warning::$MSG"
+          echo "$PAYLOAD"
+          exit 0
+        fi
+        echo "::error::$MSG"
+        echo "$PAYLOAD"
+        exit 1
