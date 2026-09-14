@@ -36,12 +36,13 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 | `title`   | Yes     | -       | Notification title. |
 | `message` | No      | `""`    | Notification body (sent as `body` in the API). |
 | `status`  | No      | `started` | One of: `started`, `success`, `failed`. |
-| `warn_only` | No    | `false` | Report an undelivered notification as a warning instead of failing the step. |
+| `warn_only` | No    | `true`  | Report an undelivered notification as a warning instead of failing the step. Set to `false` to fail the step. |
 
 ## Delivery failures
 
-The step fails when the notification does not reach a device, so a broken setup
-cannot look green. The reason is reported as an annotation:
+Notifications are informational: when a notification does not reach a device, the
+step stays green and the reason is reported as a warning annotation. A notification
+problem (such as a missing or wrong `api_key`) never fails your deploy:
 
 | Reason | Meaning |
 |--------|---------|

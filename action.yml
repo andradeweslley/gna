@@ -16,9 +16,9 @@ inputs:
     required: false
     default: "started"
   warn_only:
-    description: "When true, report a failed delivery as a warning instead of failing the step"
+    description: "When true (default), report a failed delivery as a warning so notifications never fail the workflow; set to false to fail the step instead"
     required: false
-    default: "false"
+    default: "true"
 runs:
   using: "composite"
   steps:
