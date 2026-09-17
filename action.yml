@@ -12,9 +12,13 @@ inputs:
     required: false
     default: ""
   status:
-    description: "One of started, success, failed"
+    description: "One of started, success, failed, info, warning"
     required: false
     default: "started"
+  priority:
+    description: "One of low, normal, urgent"
+    required: false
+    default: "normal"
   warn_only:
     description: "When true (default), report a failed delivery as a warning so notifications never fail the workflow; set to false to fail the step instead"
     required: false
@@ -29,6 +33,7 @@ runs:
         TITLE: ${{ inputs.title }}
         MESSAGE: ${{ inputs.message }}
         STATUS: ${{ inputs.status }}
+        PRIORITY: ${{ inputs.priority }}
         WARN_ONLY: ${{ inputs.warn_only }}
         BASE_URL: "https://hofvarpnir.weslleyandrade.dev.br"
       run: |
@@ -38,7 +43,8 @@ runs:
           --arg title "$TITLE" \
           --arg body "$MESSAGE" \
           --arg status "$STATUS" \
-          '{title: $title, body: $body, status: $status}')
+          --arg priority "$PRIORITY" \
+          '{title: $title, body: $body, status: $status, priority: $priority}')
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/api/notify" \
           -H "Authorization: Bearer ${API_KEY}" \
           -H "Content-Type: application/json" \
@@ -46,6 +52,12 @@ runs:
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         PAYLOAD=$(echo "$RESPONSE" | sed '$d')
         if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+          # A 2xx here can mean "muted" (every device opted out of this status/priority) as
+          # well as "sent" — that's a deliberate outcome, not a failure, but it should still
+          # be visible instead of looking identical to a normal delivered notification.
+          if echo "$PAYLOAD" | grep -q '"result":"muted"'; then
+            echo "::notice::Gná: notification muted (no device opted in for this status/priority)"
+          fi
           exit 0
         fi
 

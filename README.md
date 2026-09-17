@@ -35,7 +35,8 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 | `api_key` | Yes     | -       | Bearer token for `/api/notify`. Store in repo secrets (e.g. `API_KEY` or `NOTIFY_API_KEY`). |
 | `title`   | Yes     | -       | Notification title. |
 | `message` | No      | `""`    | Notification body (sent as `body` in the API). |
-| `status`  | No      | `started` | One of: `started`, `success`, `failed`. |
+| `status`  | No      | `started` | One of: `started`, `success`, `failed`, `info`, `warning`. |
+| `priority` | No     | `normal` | One of: `low`, `normal`, `urgent`. Recipients can mute individual statuses/priorities per device in Settings. |
 | `warn_only` | No    | `true`  | Report an undelivered notification as a warning instead of failing the step. Set to `false` to fail the step. |
 
 ## Delivery failures
@@ -52,6 +53,10 @@ problem (such as a missing or wrong `api_key`) never fails your deploy:
 | rate limited | More than 60 notifications in a minute. |
 
 Set `warn_only: true` to keep the step green and only emit a warning.
+
+If every one of the recipient's devices has muted this status or priority, the step
+still succeeds (this isn't a delivery failure) but logs a `::notice::` annotation so
+the run doesn't look identical to an actually-delivered notification.
 
 ## Secrets
 
