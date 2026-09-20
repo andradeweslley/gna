@@ -16,9 +16,9 @@ inputs:
     required: false
     default: "started"
   priority:
-    description: "One of low, normal, urgent"
+    description: "One of low, normal, urgent. Leave empty (default) to derive it from status: started -> low, success -> normal, failed -> urgent"
     required: false
-    default: "normal"
+    default: ""
   warn_only:
     description: "When true (default), report a failed delivery as a warning so notifications never fail the workflow; set to false to fail the step instead"
     required: false
@@ -38,13 +38,25 @@ runs:
         BASE_URL: "https://hofvarpnir.weslleyandrade.dev.br"
       run: |
         set -e
+        # Deploy notifications always map the same way, so callers don't have to repeat it.
+        # An explicit priority input still wins; statuses without a mapping (info, warning)
+        # send no priority at all and let the API apply its own default.
+        if [[ -z "$PRIORITY" ]]; then
+          case "$STATUS" in
+            started) PRIORITY="low" ;;
+            success) PRIORITY="normal" ;;
+            failed)  PRIORITY="urgent" ;;
+          esac
+        fi
+
         # Build JSON body safely with jq (available on GitHub-hosted runners)
         BODY=$(jq -n \
           --arg title "$TITLE" \
           --arg body "$MESSAGE" \
           --arg status "$STATUS" \
           --arg priority "$PRIORITY" \
-          '{title: $title, body: $body, status: $status, priority: $priority}')
+          '{title: $title, body: $body, status: $status}
+           + (if $priority == "" then {} else {priority: $priority} end)')
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/api/notify" \
           -H "Authorization: Bearer ${API_KEY}" \
           -H "Content-Type: application/json" \

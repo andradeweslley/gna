@@ -36,7 +36,7 @@ GitHub Action that sends a notification to [Hófvarpnir](https://github.com/andr
 | `title`   | Yes     | -       | Notification title. |
 | `message` | No      | `""`    | Notification body (sent as `body` in the API). |
 | `status`  | No      | `started` | One of: `started`, `success`, `failed`, `info`, `warning`. |
-| `priority` | No     | `normal` | One of: `low`, `normal`, `urgent`. Recipients can mute individual statuses/priorities per device in Settings. |
+| `priority` | No     | derived from `status` | One of: `low`, `normal`, `urgent`. When not set, it follows the `status`: `started` -> `low`, `success` -> `normal`, `failed` -> `urgent`. With `info` or `warning`, no priority is sent and the API applies its default. Recipients can mute individual statuses/priorities per device in Settings. |
 | `warn_only` | No    | `true`  | Report an undelivered notification as a warning instead of failing the step. Set to `false` to fail the step. |
 
 ## Delivery failures
@@ -52,7 +52,7 @@ problem (such as a missing or wrong `api_key`) never fails your deploy:
 | invalid API key | The `api_key` is wrong or was regenerated. |
 | rate limited | More than 60 notifications in a minute. |
 
-Set `warn_only: true` to keep the step green and only emit a warning.
+Set `warn_only: false` to fail the step instead, so a broken setup cannot look green.
 
 If every one of the recipient's devices has muted this status or priority, the step
 still succeeds (this isn't a delivery failure) but logs a `::notice::` annotation so
